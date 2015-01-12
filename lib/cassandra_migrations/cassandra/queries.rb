@@ -116,7 +116,12 @@ module CassandraMigrations
         elsif value.is_a?(Hash)
           "#{operation}{ #{value.reduce([]) {|sum, (key, value)| sum << "'#{key}': '#{value}'" }.join(", ") } }"
         else
-          value.to_s
+          value = value.to_s
+          if value == ""
+            value = 'null'
+          else
+            value = value
+          end
         end
       end
     end
