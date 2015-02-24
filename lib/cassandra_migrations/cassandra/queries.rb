@@ -60,6 +60,7 @@ module CassandraMigrations
 
         if options[:page_size]
           query_string << ", page_size:#{options[:page_size]}"
+        end
 
         execute(query_string)
       end
