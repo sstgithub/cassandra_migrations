@@ -124,6 +124,30 @@ module CassandraMigrations
           end
         end
       end
+
+      def string_to_cql(value)
+        "'#{value}'"
+      end
+
+      def datetime_to_cql(value)
+        "'#{value.strftime('%Y-%m-%d %H:%M:%S%z')}'"
+      end
+
+      def array_value_to_cql(column, value, table, operation)
+        type = get_column_type(table, column)
+        values = %[#{value.map { |v| to_cql_value(nil, v, nil) } * ', '}]
+
+        if type && type == :list
+          %[#{operation}[#{values}]]
+        else # it must be a set!
+          %[#{operation}{#{values}}]
+        end
+      end
+
+      def hash_to_cql(value, operation)
+        "#{operation}{ #{value.reduce([]) {|sum, (key, value)| sum << "'#{key}': '#{value}'" }.join(", ") } }"
+      end
+
     end
   end
 end
