@@ -72,28 +72,28 @@ module CassandraMigrations
 
     private
 
-      SYMBOL_FOR_TYPE = {
-        'SetType' => :set,
-        'ListType' => :list,
-        'MapType' => :map,
-        'BooleanType' => :boolean,
-        'FloatType' => :float,
-        'Int32Type' => :int,
-        'DateType' => :timestamp,
-        'UTF8Type' => :string,
-        'BytesType' => :blob,
-        'UUIDType' => :uuid,
-        'DoubleType' => :double,
-        'InetAddressType' => :inet,
-        'AsciiType' => :ascii,
-        'LongType' => :bigint ,
-        'DecimalType' => :decimal,
-        'TimeUUIDType' => :timeuuid
-      }
-
       def get_column_type(table, column)
         column_info = client.execute("SELECT VALIDATOR FROM system.schema_columns WHERE keyspace_name = '#{client.keyspace}' AND columnfamily_name = '#{table}' AND column_name = '#{column}'")
-        SYMBOL_FOR_TYPE[column_info.first['validator']]
+        raw_type = column_info.first['validator']
+
+        case
+          when raw_type.include?('SetType'); :set
+          when raw_type.include?('ListType'); :list
+          when raw_type.include?('MapType'); :map
+          when raw_type.include?('BooleanType'); :boolean
+          when raw_type.include?('FloatType'); :float
+          when raw_type.include?('Int32Type'); :int
+          when raw_type.include?('DateType'); :timestamp
+          when raw_type.include?('UTF8Type'); :string
+          when raw_type.include?('BytesType'); :blob
+          when raw_type.include?('UUIDType'); :uuid
+          when raw_type.include?('DoubleType'); :double
+          when raw_type.include?('InetAddressType'); :inet
+          when raw_type.include?('AsciiType'); :ascii
+          when raw_type.include?('LongType'); :bigint
+          when raw_type.include?('DecimalType'); :decimal
+          when raw_type.include?('TimeUUIDType'); :timeuuid
+        end
       end
 
       def to_cql_value(column, value, table, options={})
@@ -101,13 +101,20 @@ module CassandraMigrations
         operation = operator ? "#{column} #{operator} " : ''
 
         if value.respond_to?(:strftime)
-          datetime_to_cql(value)
+          "'#{value.strftime('%Y-%m-%d %H:%M:%S%z')}'"
         elsif value.is_a?(String)
-          string_to_cql(value)
+          "'#{value}'"
         elsif value.is_a?(Array)
-          array_value_to_cql(column, value, table, operation)
+          type = get_column_type(table, column)
+          values = %[#{value.map { |v| to_cql_value(nil, v, nil) } * ', '}]
+
+          if type && type == :list
+            %[#{operation}[#{values}]]
+          else # it must be a set!
+            %[#{operation}{#{values}}]
+          end
         elsif value.is_a?(Hash)
-          hash_to_cql(value, operation)
+          "#{operation}{ #{value.reduce([]) {|sum, (key, value)| sum << "'#{key}': '#{value}'" }.join(", ") } }"
         else
           value = value.to_s
           if value == ""
@@ -117,30 +124,6 @@ module CassandraMigrations
           end
         end
       end
-
-      def string_to_cql(value)
-        "'#{value}'"
-      end
-
-      def datetime_to_cql(value)
-        "'#{value.strftime('%Y-%m-%d %H:%M:%S%z')}'"
-      end
-
-      def array_value_to_cql(column, value, table, operation)
-        type = get_column_type(table, column)
-        values = %[#{value.map { |v| to_cql_value(nil, v, nil) } * ', '}]
-
-        if type && type == :list
-          %[#{operation}[#{values}]]
-        else # it must be a set!
-          %[#{operation}{#{values}}]
-        end
-      end
-
-      def hash_to_cql(value, operation)
-        "#{operation}{ #{value.reduce([]) {|sum, (key, value)| sum << "'#{key}': '#{value}'" }.join(", ") } }"
-      end
-
     end
   end
 end
