@@ -1,5 +1,4 @@
 # encoding: utf-8
-require 'cassandra'
 
 module CassandraMigrations
   module Cassandra
@@ -26,7 +25,7 @@ module CassandraMigrations
         config = Config.configurations[env]
         begin
           execute("DROP KEYSPACE #{config.keyspace}")
-        rescue ::Cassandra::Errors::QueryError
+        rescue Cql::QueryError
           raise Errors::UnexistingKeyspaceError, config.keyspace
         end
       end
