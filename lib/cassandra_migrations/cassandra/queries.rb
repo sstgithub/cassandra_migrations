@@ -58,12 +58,8 @@ module CassandraMigrations
           query_string << " ALLOW FILTERING"
         end
 
-        if options[:page_size]
-          execute(query_string, "#{options[:page_size]}")
-        else
-          execute(query_string)
-        end
 
+        execute(query_string)
 
       end
 
