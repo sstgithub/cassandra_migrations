@@ -59,10 +59,12 @@ module CassandraMigrations
         end
 
         if options[:page_size]
-          query_string << ", page_size:#{options[:page_size]}"
+          execute(query_string, "#{options[:page_size]}")
+        else
+          execute(query_string)
         end
 
-        execute(query_string)
+
       end
 
       def delete!(table, selection, options={})
