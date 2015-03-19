@@ -39,27 +39,31 @@ module CassandraMigrations
         execute(query)
       end
 
-      def select(table, options={})
-        query_string = "SELECT #{options[:projection] || '*'} FROM #{table}"
+      def select(table, statement_options={}, secondary_options=nil)
+        query_string = "SELECT #{statement_options[:projection] || '*'} FROM #{table}"
 
-        if options[:selection]
-          query_string << " WHERE #{options[:selection]}"
+        if statement_options[:selection]
+          query_string << " WHERE #{statement_options[:selection]}"
         end
 
-        if options[:order_by]
-          query_string << " ORDER BY #{options[:order_by]}"
+        if statement_options[:order_by]
+          query_string << " ORDER BY #{statement_options[:order_by]}"
         end
 
-        if options[:limit]
-          query_string << " LIMIT #{options[:limit]}"
+        if statement_options[:limit]
+          query_string << " LIMIT #{statement_options[:limit]}"
         end
 
-        if options[:allow_filtering]
+        if statement_options[:allow_filtering]
           query_string << " ALLOW FILTERING"
         end
 
+        if secondary_options
+          execute(query_string)
+        else
+          execute(query_string, secondary_options)
+        end
 
-        execute(query_string)
 
       end
 
