@@ -36,7 +36,7 @@ module CassandraMigrations
         execute create_cql
       end
       
-      def change_table_options(table_name, options={})
+      def change_options(table_name, options={})
         table_definition = TableDefinition.new
         table_definition.define_options(options[:options]) if options[:options]
 
